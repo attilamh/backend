@@ -1,0 +1,12 @@
+{"properties": [
+  {
+    "name": "sso.login.prefix",
+    "type": "java.lang.String",
+    "description": "A description for 'sso.login.prefix'"
+  },
+  {
+    "name": "custom-oauth.login.prefix",
+    "type": "java.lang.String",
+    "description": "A description for 'custom-oauth.login.prefix'"
+  }
+]}

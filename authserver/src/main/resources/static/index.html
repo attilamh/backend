@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Demo</title>
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width" />
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" />
+<script type="text/javascript"
+	src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript"
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
+<script type="text/javascript"
+	src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/uaa/js.cookie.js"></script>
+
+</head>
+<body>
+	<h1>Login</h1>
+	<div class="container unauthenticated">
+		<div>
+			With Facebook: <a href="/uaa/sso/facebook">click here</a>
+		</div>
+		<div>
+			With Github: <a href="/uaa/sso/github">click here</a>
+		</div>
+		<div>
+			With Google: <a href="/uaa/sso/google">click here</a>
+		</div>
+		<div>
+			Or login as your own user:
+			<form id="mylogin" action="/uaa/login" method="post">
+				<!-- input type="hidden" name="${_csrf.parameterName}"
+					value="${_csrf.token}" /> -->
+				<div>
+					<label>User:</label> <input type="text" name="username" value=""
+						placeholder="Enter your username">
+				</div>
+				<div>
+					<label>Password:</label> <input type="password" name="password"
+						value="" placeholder="Enter your password">
+				</div>
+				<div>
+					<button type="submit">Login</button>
+				</div>
+				<div>
+					Or register: <a href="/uaa/registration">click here</a>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="container authenticated" style="display: none">
+		Logged in as: <span id="user"></span>
+		<div>
+			<form action="/app/home" method="post">
+				Go to app:
+				<button>click here</button>
+			</form>
+		</div>
+		<div>
+			<button onClick="logout()" class="btn btn-primary">Logout</button>
+		</div>
+	</div>
+	<script>
+		function getLoggedInUser() {
+			$.get("/uaa/user", function(data) {
+				if (typeof data.name != "undefined") {
+					$("#user").html(data.name);
+					$(".unauthenticated").hide();
+					$(".authenticated").show();
+				}
+				else {
+					console.log("User not defined in data");
+				}
+			});
+		}
+		var frm = $("#mylogin");
+		frm.submit(function(e) {
+			e.preventDefault();
+
+			$.ajax({
+				type : frm.attr('method'),
+				url : frm.attr('action'),
+				data : frm.serialize(),
+				success : function(data) {
+					console.log('Submission was successful.');
+					console.log(data);
+					getLoggedInUser();
+				},
+				error : function(data) {
+					console.log('An error occurred.');
+					console.log(data);
+				},
+			});
+		});
+		
+		$(".authenticated").hide();
+		$(".unauthenticated").show();
+		getLoggedInUser();
+		var logout = function() {
+			$.post("/uaa/logout", function() {
+				$("#user").html('');
+				$(".unauthenticated").show();
+				$(".authenticated").hide();
+			})
+			return true;
+		}
+
+		$.ajaxSetup({
+			beforeSend : function(xhr, settings) {
+				console.log("Url is:" + settings.url);
+				if (settings.type == 'POST' || settings.type == 'PUT'
+						|| settings.type == 'DELETE') {
+					if (!(/^http:.*/.test(settings.url) || /^https:.*/
+							.test(settings.url))) {
+						// Only send the token to relative URLs i.e. locally.
+						console.log("Sending xsrf token away...");
+						xhr.setRequestHeader("X-XSRF-TOKEN", Cookies
+								.get('XSRF-TOKEN'));
+					} else {
+						console.log("Not sent token");
+					}
+				} else {
+					console.log("not even getting into it.");
+				}
+			}
+		});
+	</script>
+
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Demo</title>
+<meta name="description" content="" />
+<meta name="viewport" content="width=device-width" />
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" />
+<script type="text/javascript"
+	src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script type="text/javascript"
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
+<script type="text/javascript"
+	src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/uaa/js.cookie.js"></script>
+
+</head>
+<body>
+	<h1>Register</h1>
+	<div class="unauthenticated">
+		Or login as your own user:
+		<form id="myregistration" action="/uaa/registration" method="post">
+			<!-- input type="hidden" name="${_csrf.parameterName}"
+					value="${_csrf.token}" /> -->
+			<div>
+				<label>User:</label> <input type="text" name="name" value=""
+					placeholder="Enter your name">
+			</div>
+			<div>
+				<label>User:</label> <input type="text" name="email" value=""
+					placeholder="Enter your email">
+			</div>
+			<div>
+				<label>Password:</label> <input type="password" name="password"
+					value="" placeholder="Enter your password">
+			</div>
+			<div>
+				<label>Password:</label> <input type="password"
+					name="confirmPassword" value="" placeholder="Confirm your password">
+			</div>
+			<div>
+				<button type="submit">Login</button>
+			</div>
+		</form>
+	</div>
+	<div class="authenticated"></div>
+	<script>
+		$(".unauthenticated").show();
+		$(".authenticated").hide();
+
+		function objectifyForm(formArray) {//serialize data function
+
+			var userDTO = {};
+			for (var i = 0; i < formArray.length; i++) {
+				userDTO[formArray[i]['name']] = formArray[i]['value'];
+			}
+			var user = {
+					user : userDTO
+			}
+			return userDTO;
+		}
+
+		var frm = $("#myregistration");
+		frm.submit(function(e) {
+			e.preventDefault();
+			var data = objectifyForm(frm.serializeArray());
+			$.ajax({
+				type : frm.attr('method'),
+				url : frm.attr('action'),
+				data : JSON.stringify(data),
+				contentType : 'application/json; charset=utf-8',
+				success : function(data) {
+					console.log('Submission was successful.');
+					console.log(data);
+					$(".authenticated").text(data);
+					$(".unauthenticated").hide();
+					$(".authenticated").show();
+				},
+				error : function(response, status) {
+					console.log('An error occurred.');
+					console.log(response);
+					var errorMsg = status;
+					errorMsg += response.responseText;
+					$(".authenticated").text(errorMsg);
+					$(".unauthenticated").hide();
+					$(".authenticated").show();
+				},
+			});
+		});
+		$.ajaxSetup({
+			beforeSend : function(xhr, settings) {
+				console.log("Url is:" + settings.url);
+				if (settings.type == 'POST' || settings.type == 'PUT'
+						|| settings.type == 'DELETE') {
+					if (!(/^http:.*/.test(settings.url) || /^https:.*/
+							.test(settings.url))) {
+						// Only send the token to relative URLs i.e. locally.
+						console.log("Sending xsrf token away...");
+						xhr.setRequestHeader("X-XSRF-TOKEN", Cookies
+								.get('XSRF-TOKEN'));
+					} else {
+						console.log("Not sent token");
+					}
+				} else {
+					console.log("not even getting into it.");
+				}
+			}
+		});
+	</script>
+
+</body>
+</html>
