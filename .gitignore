@@ -1,0 +1,12 @@
+authserver/src/main/resources/credentials.json
+authserver/src/main/resources/keystore.jks
+authserver/src/main/resources/mydomain.csr
+.classpath
+.project
+.settings/
+target/
+.mvn/
+.externalToolBuilders/
+mail.log
+.apt_generated/
+logs/
