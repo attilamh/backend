@@ -1,4 +1,4 @@
-package com.web.auth;
+package com.webapp.auth;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
