@@ -74,7 +74,7 @@
 				success : function(data) {
 					console.log('Submission was successful.');
 					console.log(data);
-					$(".authenticated").text(data);
+					$(".authenticated").text(JSON.stringify(data));
 					$(".unauthenticated").hide();
 					$(".authenticated").show();
 				},

@@ -1,8 +1,11 @@
 package com.webapp.auth.service;
 
+import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,40 +23,53 @@ public class RegistrationService {
 
 	@Autowired
 	private LocalUserRepository localUserRepository;
-	
+
 	@Autowired
 	private ConfirmationTokenRepository confirmationTokenRepository;
-	
+
 	@Autowired
 	private EmailService emailService;
-	
+
+	private static final Logger logger = Logger.getLogger(EmailService.class.getName());
+
 	/**
-	 * Register a new local user if the email is not duplicated. In that case returns null.
+	 * Register a new local user if the email is not duplicated.
 	 * 
 	 * @param userDto
-	 * @return localUser - the new user or null if already exists
+	 * @return localUser - the new user or empty optional if user does not exist
 	 */
-	public LocalUser registerNewUser(LocalUserDTO userDto) {
+	public Optional<LocalUser> registerNewUser(LocalUserDTO userDto) {
+		LocalUser localUser = null;
 		if (isEmailAvailable(userDto.getEmail())) {
-			LocalUser localUser = toLocalUser(userDto);
+			localUser = toLocalUser(userDto);
 			// disable user until confirmation link clicked
 			localUser.setEnabled(false);
-			return localUserRepository.save(localUser);
+			localUser = localUserRepository.save(localUser);
 		}
-		return null;
+		return Optional.ofNullable(localUser);
 	}
-	
-	public void sendConfirmationEmail(LocalUser user) {
+
+	public Optional<String> sendConfirmationEmail(LocalUser user) throws MailException {
 		ConfirmationToken token = createToken(user);
-		emailToken(user, token);
+		return emailToken(user, token);
 	}
-	
-	private void emailToken(LocalUser user, ConfirmationToken token) {
-		String msg = "Hello %s I am sending you the confirmation token. Please click the link to finish the user registration: <a href='https://localhost:8443/uaa/confirm-registration?t=%s'>finish registration</a>";
+
+	private Optional<String> emailToken(LocalUser user, ConfirmationToken token) {
+		// TODO Need to move this into a template and internationalize
+		String msg = "Hello %s \n Here is the confirmation token. Please click the link to finish the user registration: <a href='https://localhost:8443/uaa/confirm-registration?t=%s'>finish registration</a>";
+		Optional<String> registrationMessage = Optional.empty();
 		String text = String.format(msg, user.getName(), token.getConfirmationToken());
-		emailService.sendSimpleMessage(user.getEmail(), "Registration almost complete", text);
+		registrationMessage = Optional.ofNullable(text);
+		try {
+			emailService.sendSimpleMessage(user.getEmail(), "Registration almost complete", text);
+		} catch (Exception e) {
+			// if sending email ran into exception return token message
+			// so registration can be completed
+			logger.info(e.getMessage());
+		}
+		return registrationMessage;
 	}
-	
+
 	private ConfirmationToken createToken(LocalUser user) {
 		ConfirmationToken confirmationToken = new ConfirmationToken();
 		// Generate random 36-character string token for confirmation link
@@ -61,7 +77,7 @@ public class RegistrationService {
 		confirmationToken.setUser(user);
 		return confirmationTokenRepository.save(confirmationToken);
 	}
-	
+
 	private LocalUser toLocalUser(LocalUserDTO userDto) {
 		LocalUser user = new LocalUser();
 		user.setEmail(userDto.getEmail());
@@ -69,12 +85,12 @@ public class RegistrationService {
 		user.setPassword(encryptPassword(userDto.getPassword()));
 		return user;
 	}
-	
+
 	private boolean isEmailAvailable(String email) {
 		LocalUser user = localUserRepository.findByEmail(email);
 		return (user == null);
 	}
-	
+
 	private String encryptPassword(String password) {
 		return passwordEncoder.encode(password);
 	}
